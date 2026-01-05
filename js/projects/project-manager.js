@@ -134,16 +134,50 @@ export class ProjectManager {
         const btnSave = document.getElementById('btn-save-project');
         const btnCancel = document.getElementById('btn-cancel-project');
 
-        btnNew.onclick = () => form.classList.remove('hidden');
-        btnCancel.onclick = () => form.classList.add('hidden');
+        if (btnNew) btnNew.onclick = () => form.classList.remove('hidden');
+        if (btnCancel) btnCancel.onclick = () => form.classList.add('hidden');
 
-        btnSave.onclick = async () => {
-            const name = document.getElementById('inp-proj-name').value;
-            const desc = document.getElementById('inp-proj-desc').value;
-            if (name) {
-                await this.createProject(name, desc);
-                form.classList.add('hidden');
-            }
-        };
+        if (btnSave) {
+            btnSave.onclick = async () => {
+                const name = document.getElementById('inp-proj-name').value;
+                const desc = document.getElementById('inp-proj-desc').value;
+                if (name) {
+                    await this.createProject(name, desc);
+                    form.classList.add('hidden');
+                }
+            };
+        }
+
+        // Bind Export/Import Actions properly
+        const btnExportJson = document.getElementById('btn-export-json');
+        const btnExportExcel = document.getElementById('btn-export-excel');
+        const fileInput = document.getElementById('file-import-smart');
+
+        if (btnExportJson) {
+            btnExportJson.onclick = () => {
+                if (window.app && window.app.dataManager) {
+                    window.app.dataManager.exportAll();
+                }
+            };
+        }
+        if (btnExportExcel) {
+            btnExportExcel.onclick = async () => {
+                if (window.app && window.app.excelGenerator) {
+                    const records = await db.getAll('socioambiental');
+                    window.app.excelGenerator.generate(records);
+                }
+            };
+        }
+        if (fileInput) {
+            fileInput.onchange = async (e) => {
+                if (e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    if (window.app) {
+                        await window.app.handleSmartImport(file);
+                    }
+                    e.target.value = '';
+                }
+            };
+        }
     }
 }

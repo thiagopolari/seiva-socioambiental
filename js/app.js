@@ -123,11 +123,16 @@ class App {
             // 2. Check if it's a Backup
             if (result.isBackup) {
                 this.modal.show('Importando Backup...', 'Restaurando dados do sistema...');
-                const blob = new Blob([result.content], { type: 'application/json' });
-                const importCount = await this.dataManager.importData(blob);
-
-                this.modal.close();
-                if (this.currentView === 'dashboard') this.dashboard.render();
+                try {
+                    const blob = new Blob([result.content], { type: 'application/json' });
+                    const importCount = await this.dataManager.importData(blob);
+                    this.modal.close();
+                    alert(`Importação concluída! ${importCount} registros restaurados.`);
+                    this.dashboard.render(); // Refresh dashboard
+                } catch (importError) {
+                    console.error('Import error:', importError);
+                    this.modal.show('Erro na Importação', importError.message);
+                }
                 return;
             }
 
