@@ -16,108 +16,156 @@ export class PDFGenerator {
         const pageWidth = this.doc.internal.pageSize.getWidth();
         const contentWidth = pageWidth - (margin * 2);
 
-        // Header
-        this.doc.setFontSize(18);
-        this.doc.setTextColor(26, 71, 42); // Primary Green
+        // --- Styles ---
+        const colors = {
+            primary: [26, 71, 42],     // Dark Green
+            secondary: [240, 253, 244],// Light Green
+            text: [60, 60, 60],        // Dark Gray
+            label: [100, 100, 100]     // Gray
+        };
+
+        // --- Helper: Check Page Break ---
+        const checkPageBreak = (spaceNeeded = 20) => {
+            if (yPos + spaceNeeded > 280) {
+                this.doc.addPage();
+                yPos = 20;
+                // Repeat Header on new page (optional, keeping clean for now)
+            }
+        };
+
+        // --- Cover / Header ---
+        this.doc.setFillColor(...colors.primary);
+        this.doc.rect(0, 0, pageWidth, 5, 'F'); // Top bar
+
+        yPos = 30;
+        this.doc.setFont("helvetica", "bold");
+        this.doc.setFontSize(22);
+        this.doc.setTextColor(...colors.primary);
         this.doc.text('Relatório Socioambiental - Seiva', margin, yPos);
         yPos += 10;
 
+        // Metadata Box
+        this.doc.setDrawColor(200);
+        this.doc.setFillColor(250, 250, 250);
+        this.doc.roundedRect(margin, yPos, contentWidth, 25, 3, 3, 'FD');
+
         this.doc.setFontSize(10);
-        this.doc.setTextColor(100);
-        this.doc.text(`ID: ${record.id} | Data: ${new Date(record.date).toLocaleDateString()}`, margin, yPos);
-        yPos += 15;
+        this.doc.setTextColor(...colors.text);
+        this.doc.setFont("helvetica", "normal");
 
-        // Iterate Sections
+        this.doc.text(`ID do Registro: ${record.id}`, margin + 5, yPos + 8);
+        this.doc.text(`Data da Coleta: ${new Date(record.date).toLocaleDateString()}`, margin + 5, yPos + 16);
+
+        const community = data.community_name || 'Comunidade não informada';
+        const interviewer = data.interviewer_name || 'Não identificado';
+
+        this.doc.text(`Comunidade: ${community}`, margin + contentWidth / 2, yPos + 8);
+        this.doc.text(`Entrevistador: ${interviewer}`, margin + contentWidth / 2, yPos + 16);
+
+        yPos += 40;
+
+        // --- Sections --- //
         schema.sections.forEach(section => {
-            // Check page break
-            if (yPos > 270) {
-                this.doc.addPage();
-                yPos = 20;
-            }
+            checkPageBreak(30);
 
-            // Section Title - Strip emojis for PDF compatibility
+            // Section Header
+            this.doc.setFont("helvetica", "bold");
             this.doc.setFontSize(14);
-            this.doc.setTextColor(0);
-            this.doc.setFillColor(240, 253, 244); // Light green bg
-            this.doc.rect(margin, yPos - 5, contentWidth, 8, 'F');
+            this.doc.setTextColor(...colors.primary);
+            this.doc.setDrawColor(...colors.primary);
+
+            // Background for title
+            this.doc.setFillColor(...colors.secondary);
+            this.doc.rect(margin, yPos - 6, contentWidth, 10, 'F');
+
+            // Clean Title (Strip Emojis)
             const cleanTitle = section.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]/gu, '').trim();
-            this.doc.text(cleanTitle, margin + 2, yPos);
-            yPos += 12;
+            this.doc.text(cleanTitle, margin + 5, yPos);
+
+            // Underline
+            this.doc.line(margin, yPos + 4, margin + contentWidth, yPos + 4);
+
+            yPos += 15;
 
             // Fields
             section.fields.forEach(field => {
                 const value = data[field.id];
-                if (!value) return; // Skip empty? Or show 'N/A'
+                if (value === undefined || value === null || value === '') return;
 
-                // Check page break
-                if (yPos > 270) {
-                    this.doc.addPage();
-                    yPos = 20;
+                // Formatting Value
+                let displayValue = String(value);
+                if (Array.isArray(value)) displayValue = value.join(', ');
+                if (field.type === 'gps' && value.lat) {
+                    displayValue = `Lat: ${value.lat.toFixed(6)}, Lng: ${value.lng.toFixed(6)} (Prec: ${value.accuracy}m)`;
                 }
 
-                this.doc.setFontSize(10);
-                this.doc.setTextColor(80);
+                checkPageBreak(field.type === 'photo' || field.type === 'map' ? 60 : 15);
 
-                // Handle complex types
-                if (field.type === 'photo') {
-                    // Check if value is array (our PhotoCapture returns array) or single
-                    const photos = Array.isArray(value) ? value : [value];
-                    if (photos.length > 0) {
-                        this.doc.text(`${field.label}:`, margin, yPos);
-                        yPos += 5;
+                // Render based on type
+                if (field.type === 'photo' || field.type === 'signature') {
+                    // Label
+                    this.doc.setFont("helvetica", "bold");
+                    this.doc.setFontSize(10);
+                    this.doc.setTextColor(...colors.text);
+                    this.doc.text(field.label, margin, yPos);
+                    yPos += 5;
 
-                        let photoX = margin;
-                        photos.forEach(photoObj => {
-                            const imgData = photoObj.base64 || photoObj; // Handle structure
-                            if (typeof imgData === 'string' && imgData.startsWith('data:image')) {
-                                try {
-                                    this.doc.addImage(imgData, 'JPEG', photoX, yPos, 40, 40);
-                                    photoX += 45;
-                                } catch (e) {
-                                    console.warn('Error adding image', e);
-                                    this.doc.text('[Erro na imagem]', photoX, yPos + 10);
-                                }
+                    const images = Array.isArray(value) ? value : [value];
+                    let imgX = margin;
+
+                    images.forEach(img => {
+                        const imgData = img.base64 || img;
+                        if (typeof imgData === 'string' && imgData.startsWith('data:image')) {
+                            try {
+                                // Add Image
+                                const imgH = field.type === 'signature' ? 30 : 50;
+                                const imgW = field.type === 'signature' ? 60 : 50;
+                                this.doc.addImage(imgData, field.type === 'signature' ? 'PNG' : 'JPEG', imgX, yPos, imgW, imgH);
+                                imgX += imgW + 5;
+                            } catch (e) {
+                                console.warn('PDF Image Error', e);
                             }
-                        });
-                        yPos += 45; // Height of image + gap
-                    }
-                } else if (field.type === 'signature') {
-                    if (typeof value === 'string' && value.startsWith('data:image')) {
-                        this.doc.text(`${field.label}:`, margin, yPos);
-                        yPos += 5;
-                        this.doc.addImage(value, 'PNG', margin, yPos, 60, 30);
-                        yPos += 35;
-                    }
-                } else if (field.type === 'gps') {
-                    const formatted = value.lat ? `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}` : JSON.stringify(value);
-                    this.doc.text(`${field.label}: ${formatted}`, margin, yPos);
-                    yPos += 7;
+                        }
+                    });
+                    yPos += (field.type === 'signature' ? 35 : 55);
+
                 } else {
-                    // Text/Select/Number
-                    let textVal = value;
-                    if (Array.isArray(value)) textVal = value.join(', ');
+                    // Standard Text Field
+                    this.doc.setFont("helvetica", "bold");
+                    this.doc.setFontSize(10);
+                    this.doc.setTextColor(...colors.label);
 
-                    // Split text if too long
-                    const label = `${field.label}: `;
-                    this.doc.setFont(undefined, 'bold');
-                    this.doc.text(label, margin, yPos);
+                    this.doc.text(field.label + ":", margin, yPos);
 
-                    this.doc.setFont(undefined, 'normal');
-                    const labelWidth = this.doc.getTextWidth(label);
-                    const remainingWidth = contentWidth - labelWidth;
+                    // Split content to avoid overlap
+                    const labelWidth = this.doc.getTextWidth(field.label + ":");
+                    const availableWidth = contentWidth - labelWidth - 5;
 
-                    const splitText = this.doc.splitTextToSize(String(textVal), remainingWidth);
-                    this.doc.text(splitText, margin + labelWidth, yPos);
+                    this.doc.setFont("helvetica", "normal");
+                    this.doc.setTextColor(0); // Black for value
 
+                    // Multi-line value support
+                    const splitText = this.doc.splitTextToSize(displayValue, availableWidth);
+                    this.doc.text(splitText, margin + labelWidth + 5, yPos);
+
+                    // Advancing Y based on lines
                     yPos += (splitText.length * 5) + 3;
                 }
             });
 
-            yPos += 5; // Section gap
+            yPos += 5; // Extra gap after section
         });
 
-        const safeName = (record.data.community_name || 'Seiva').replace(/[^a-z0-9]/gi, '_');
-        const fname = `Relatorio_${safeName}_${record.id.substr(0, 6)}.pdf`;
-        this.doc.save(fname);
+        // Footer
+        const pageCount = this.doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            this.doc.setPage(i);
+            this.doc.setFontSize(8);
+            this.doc.setTextColor(150);
+            this.doc.text(`Página ${i} de ${pageCount} - Gerado por Seiva Socioambiental`, pageWidth / 2, 290, { align: 'center' });
+        }
+
+        const safeName = (data.community_name || 'Seiva').replace(/[^a-z0-9]/gi, '_');
+        this.doc.save(`Relatorio_Tecnico_${safeName}_${record.id.slice(0, 6)}.pdf`);
     }
 }

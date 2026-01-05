@@ -22,21 +22,40 @@ export class AIService {
 
     buildPrompt(content, type, context) {
         return `
-            Você é um analista de dados socioambientais especialista.
-            Analise o seguinte arquivo (${type}):
+            Você é um analista socioambientais sênior da 'Seiva'.
+            Sua tarefa é analisar os dados fornecidos e gerar um **Relatório Técnico Profissional**.
             
-            CONTEXTO: ${context || 'Nenhum contexto adicional.'}
+            CONTEXTO EXTRA: ${context || 'Nenhum contexto adicional.'}
 
-            CONTEÚDO DO ARQUIVO:
+            DADOS PARA ANÁLISE (${type}):
             ${content}
 
-            TAREFA:
-            1. Identifique o tipo de documento.
-            2. Resuma os principais pontos.
-            3. Identifique potenciais conflitos socioambientais ou dados relevantes.
-            4. Gere 3 insights acionáveis.
+            ---
+            
+            Gere um relatório rigoroso em Markdown com a seguinte estrutura exata:
 
-            Responda em formato Markdown.
+            ## 1. Resumo Executivo
+            (Breve parágrafo sintetizando a situação)
+
+            ## 2. Indicadores Chave (Dashboard)
+            | Indicador | Status | Detalhes |
+            |-----------|--------|----------|
+            | (ex: Risco de Desmatamento) | (Alto/Médio/Baixo) | ... |
+            | (ex: Segurança Hídrica) | ... | ... |
+            | (ex: Conflitos Territoriais) | ... | ... |
+            (Adicione mais 2-3 linhas relevantes)
+
+            ## 3. Análise de Riscos e Oportunidades
+            *   **🚨 Riscos Críticos**: ...
+            *   **💡 Oportunidades de SAFs**: ...
+            *   **👥 Aspectos Sociais**: ...
+
+            ## 4. Recomendações Técnicas
+            1.  ...
+            2.  ...
+            3.  ...
+
+            Mantenha o tom formal e direto. Use formatação Markdown (negrito, listas, tabelas).
         `;
     }
 
