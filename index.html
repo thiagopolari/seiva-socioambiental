@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Seiva Socioambiental</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a472a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="icon" type="image/png" href="assets/icons/icon.svg">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/forms.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header / Navigation -->
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="logo-icon">🌿</span>
+                <h1>Seiva Socioambiental</h1>
+            </div>
+            <nav class="main-nav">
+                <button class="nav-btn active" data-view="dashboard" title="Dashboard">
+                    <span class="icon">📊</span>
+                    <span class="label">Painel</span>
+                </button>
+                <button class="nav-btn" data-view="forms" title="Novo Formulário">
+                    <span class="icon">📝</span>
+                    <span class="label">Coleta</span>
+                </button>
+                <button class="nav-btn" data-view="projects" title="Projetos">
+                    <span class="icon">📁</span>
+                    <span class="label">Projetos</span>
+                </button>
+                <button class="nav-btn" data-view="settings" title="Configurações">
+                    <span class="icon">⚙️</span>
+                    <span class="label">Ajustes</span>
+                </button>
+            </nav>
+        </header>
+
+        <!-- Main Content Area -->
+        <main id="main-content">
+            <!-- Views will be injected here -->
+            <div id="view-dashboard" class="view-section active">
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <h3>Entrevistas</h3>
+                        <div class="value" id="stat-total-interviews">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Pendentes</h3>
+                        <div class="value" id="stat-pending">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Sincronizados</h3>
+                        <div class="value" id="stat-synced">0</div>
+                    </div>
+                </div>
+                <div id="map-container" class="dashboard-map"></div>
+
+                <div class="recent-records">
+                    <h3>Entrevistas Recentes</h3>
+                    <div id="records-list" class="record-list-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-forms" class="view-section hidden">
+                <div class="forms-container">
+                    <div class="form-header">
+                        <h2>Formulário Socioambiental</h2>
+                        <div class="form-actions">
+                            <button id="btn-save-draft" class="btn btn-secondary">Salvar Rascunho</button>
+                            <button id="btn-finalize" class="btn btn-primary">Finalizar</button>
+                        </div>
+                    </div>
+                    <div id="form-renderer" class="form-content">
+                        <!-- Dynamic Form Content -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-projects" class="view-section hidden">
+                <div class="projects-list-container">
+                    <h2>Gerenciar Dados e Projetos</h2>
+
+                    <div class="card">
+                        <h3>Exportação e Backup</h3>
+                        <div class="action-buttons" style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="btn btn-primary" id="btn-export-json">💾 Backup Completo (JSON)</button>
+                            <button class="btn btn-primary" id="btn-export-excel">📊 Exportar Excel (Todos)</button>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top: 20px;">
+                        <h3>Importação Inteligente</h3>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary);">Importe backups JSON ou planilhas
+                            Excel para análise automática.</p>
+                        <div class="action-buttons" style="margin-top: 10px;">
+                            <input type="file" id="file-import-smart" accept=".json,.xlsx,.csv" style="display: none;">
+                            <button class="btn btn-secondary"
+                                onclick="document.getElementById('file-import-smart').click()">📥 Importar
+                                Arquivo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-settings" class="view-section hidden">
+                <div class="settings-container">
+                    <h2>Configurações de IA</h2>
+                    <div class="card">
+                        <div class="form-group">
+                            <label>Provedor de IA</label>
+                            <select id="ai-provider" class="form-control">
+                                <option value="gemini">Google Gemini</option>
+                                <option value="openai">OpenAI / Compatible</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Chave de API (API Key)</label>
+                            <input type="password" id="ai-api-key" class="form-control"
+                                placeholder="Cole sua chave aqui...">
+                        </div>
+                        <div class="form-group">
+                            <label>Modelo (Model ID)</label>
+                            <input type="text" id="ai-model" class="form-control" value="gemini-1.5-flash"
+                                list="ai-models-list" placeholder="ex: gemini-1.5-pro">
+                            <datalist id="ai-models-list">
+                                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Rápido/Gratuito)</option>
+                                <option value="gemini-1.5-pro">Gemini 1.5 Pro (Mais Inteligente)</option>
+                                <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash Exp (Experimental)</option>
+                                <option value="gpt-4o">GPT-4o (OpenAI)</option>
+                                <option value="gpt-4o-mini">GPT-4o Mini (OpenAI)</option>
+                            </datalist>
+                            <small style="color: var(--text-secondary); font-size: 0.8rem;">Você pode digitar qualquer
+                                modelo compatível com a API (ex: gemini-pro, gpt-4).</small>
+                        </div>
+                        <div class="form-group" id="group-ai-endpoint" style="display: none;">
+                            <label>Endpoint URL (Opcional)</label>
+                            <input type="text" id="ai-endpoint" class="form-control"
+                                placeholder="https://api.openai.com/v1">
+                        </div>
+                        <button id="btn-save-settings" class="btn btn-primary"
+                            style="margin-top: 10px; width: 100%;">Salvar Configurações</button>
+                    </div>
+
+                    <div class="card" style="margin-top: 20px;">
+                        <h3>Sobre</h3>
+                        <p>Versão: 1.1.0 (Com IA)</p>
+                        <p>Armazenamento: <span id="storage-status">Verificando...</span></p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Connectivity Status -->
+        <div id="connection-status" class="status-indicator online">
+            <span class="dot"></span>
+            <span class="text">Online</span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <!-- App Core -->
+    <script type="module" src="js/app.js"></script>
+</body>
+
+</html>

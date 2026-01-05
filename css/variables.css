@@ -1,0 +1,50 @@
+:root {
+    /* Color Palette - Forest & Earth Tones */
+    --color-primary: #1a472a;       /* Deep Forest Green */
+    --color-primary-light: #2d6a4f; /* Lighter Green */
+    --color-secondary: #d4a373;     /* Earthy Beige/Sand */
+    --color-accent: #e9c46a;        /* Golden accent */
+    
+    --color-background: #f0fdf4;    /* Very light green background */
+    --color-surface: #ffffff;       /* White surface */
+    --color-text: #1f2937;          /* Dark gray text */
+    --color-text-light: #6b7280;    /* Muted text */
+    
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
+    
+    /* Typography */
+    --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-size-sm: 0.875rem;
+    --font-size-base: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    
+    /* Borders */
+    --border-radius-sm: 0.375rem;
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 1rem;
+    --border-color: #e5e7eb;
+    
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Mode Support (Future proofing) */
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* --color-background: #111827; */
+        /* --color-surface: #1f2937; */
+        /* --color-text: #f9fafb; */
+    }
+}
