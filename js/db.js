@@ -1,5 +1,5 @@
 const DB_NAME = 'SeivaDB';
-const DB_VERSION = 1;
+const DB_VERSION = 4;
 
 class SeivaDB {
     constructor() {

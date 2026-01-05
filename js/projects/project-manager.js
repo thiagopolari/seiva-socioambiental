@@ -26,7 +26,7 @@ export class ProjectManager {
             status: 'active'
         };
 
-        await db.create('projects', project);
+        await db.add('projects', project);
         this.render();
         return project;
     }

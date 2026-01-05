@@ -5,8 +5,8 @@ export class AIService {
         this.settingsManager = new SettingsManager();
     }
 
-    async generateAnalysis(fileContent, fileType, context) {
-        const settings = this.settingsManager.getSettings();
+    async generateAnalysis(fileContent, fileType, context, settingsOverride = null) {
+        const settings = settingsOverride || this.settingsManager.getSettings();
         if (!settings.apiKey) {
             throw new Error('Chave de API não configurada. Vá em Configurações.');
         }

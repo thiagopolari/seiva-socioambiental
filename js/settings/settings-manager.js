@@ -33,7 +33,7 @@ export class SettingsManager {
         const apiKeyEl = document.getElementById('ai-api-key');
         const modelEl = document.getElementById('ai-model');
         const endpointEl = document.getElementById('ai-endpoint');
-        const endpointGroup = document.getElementById('group-ai-endpoint');
+        const endpointGroup = document.getElementById('group-ai-endpoint'); // Corrected
         const btnSave = document.getElementById('btn-save-settings');
 
         if (!providerEl) return; // UI not loaded
@@ -71,7 +71,6 @@ export class SettingsManager {
             btnTest.onclick = () => this.testConnection();
 
             // Insert before Save button or append
-            // const card = btnSave.parentElement; // Safe check
             if (btnSave && btnSave.parentElement) {
                 btnSave.parentElement.insertBefore(btnTest, btnSave);
             }
@@ -93,21 +92,36 @@ export class SettingsManager {
         const { AIService } = await import('../ai/ai-service.js');
         const ai = new AIService();
 
-        const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Testar'));
-        const originalText = btn.textContent;
-        btn.textContent = 'Testando...';
-        btn.disabled = true;
+        let btn = document.getElementById('btn-test-connection');
+        if (!btn) {
+            btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Testar'));
+        }
+
+        const originalText = btn ? btn.textContent : '⚡ Testar Conexão';
+        if (btn) {
+            btn.textContent = 'Testando...';
+            btn.disabled = true;
+        }
+
+        const tempSettings = {
+            provider: document.getElementById('ai-provider').value,
+            apiKey: document.getElementById('ai-api-key').value,
+            model: document.getElementById('ai-model').value,
+            endpoint: document.getElementById('ai-endpoint').value
+        };
 
         try {
             // Quick hello world
-            await ai.generateAnalysis('Test', 'Text', 'Responda apenas "OK" se receber esta mensagem.');
+            await ai.generateAnalysis('Test', 'Text', 'Responda apenas "OK" se receber esta mensagem.', tempSettings);
             alert('Conexão bem sucedida! A API respondeu corretamente. ✅');
         } catch (error) {
             console.error(error);
             alert(`Falha na conexão: ${error.message} ❌`);
         } finally {
-            btn.textContent = originalText;
-            btn.disabled = false;
+            if (btn) {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
         }
     }
 }
