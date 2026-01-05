@@ -278,13 +278,38 @@ export class FormEngine {
     }
 
     getData() {
-        // Ensure we get latest data from complex components
+        // Read standard inputs from DOM to ensure externally set values are captured
+        Object.keys(this.fieldRegistry).forEach(fieldId => {
+            const { config, input } = this.fieldRegistry[fieldId];
+            const inputType = config.type;
+
+            // Standard single-value inputs
+            if (['text', 'number', 'date', 'time', 'email', 'textarea', 'select', 'slider'].includes(inputType)) {
+                const el = document.getElementById(fieldId);
+                if (el) this.formData[fieldId] = el.value;
+            }
+
+            // Radio: find checked
+            if (inputType === 'radio') {
+                const checked = document.querySelector(`input[name="${fieldId}"]:checked`);
+                if (checked) this.formData[fieldId] = checked.value;
+            }
+
+            // Multicheckbox
+            if (inputType === 'multicheckbox' || inputType === 'multiselect') {
+                const checked = Array.from(document.querySelectorAll(`input[name="${fieldId}"]:checked`)).map(cb => cb.value);
+                this.formData[fieldId] = checked;
+            }
+        });
+
+        // Ensure we get latest data from complex components (GPS, Photo, Signature)
         Object.keys(this.componentRegistry).forEach(fieldId => {
             const component = this.componentRegistry[fieldId];
-            if (component.getValue) {
+            if (component && component.getValue) {
                 this.formData[fieldId] = component.getValue();
             }
         });
+
         return this.formData;
     }
 }

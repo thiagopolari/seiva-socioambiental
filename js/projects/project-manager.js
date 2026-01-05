@@ -70,6 +70,7 @@ export class ProjectManager {
                 <h3>Ações Globais</h3>
                 <div class="action-buttons" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
                     <button class="btn btn-secondary" id="btn-export-json">💾 Backup Geral</button>
+                    <button class="btn btn-secondary" id="btn-export-excel">📊 Exportar Excel</button>
                     <button class="btn btn-secondary" onclick="document.getElementById('file-import-smart').click()">📥 Importar</button>
                      <input type="file" id="file-import-smart" accept=".json,.xlsx,.csv" style="display: none;">
                 </div>

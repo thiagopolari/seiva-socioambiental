@@ -35,12 +35,13 @@ export class PDFGenerator {
                 yPos = 20;
             }
 
-            // Section Title
+            // Section Title - Strip emojis for PDF compatibility
             this.doc.setFontSize(14);
             this.doc.setTextColor(0);
             this.doc.setFillColor(240, 253, 244); // Light green bg
             this.doc.rect(margin, yPos - 5, contentWidth, 8, 'F');
-            this.doc.text(section.title, margin + 2, yPos);
+            const cleanTitle = section.title.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F000}-\u{1F02F}]|[\u{1F0A0}-\u{1F0FF}]/gu, '').trim();
+            this.doc.text(cleanTitle, margin + 2, yPos);
             yPos += 12;
 
             // Fields
