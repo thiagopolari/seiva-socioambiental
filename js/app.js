@@ -183,6 +183,12 @@ class App {
                 return;
             }
 
+            // Update project indicator
+            const indicator = document.getElementById('active-project-indicator');
+            if (indicator) {
+                indicator.innerHTML = `📁 Projeto: <strong>${activeProj.name}</strong>`;
+            }
+
             // Always re-instantiate or re-render to inject project name
             // Pass active project name to the form engine or pre-fill logic
             this.formEngine = new FormEngine('form-renderer', SocioambientalFormSchema);

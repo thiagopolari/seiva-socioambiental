@@ -27,6 +27,11 @@ export class ProjectManager {
         };
 
         await db.add('projects', project);
+
+        // Auto-select the new project
+        this.setActiveProject(project);
+        alert(`Projeto "${name}" criado e selecionado!`);
+
         this.render();
         return project;
     }

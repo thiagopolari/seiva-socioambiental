@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/forms.css">
     <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/forms-footer.css">
 
     <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -83,15 +84,17 @@
             <div id="view-forms" class="view-section hidden">
                 <div class="forms-container">
                     <div class="form-header">
-                        <h2>Formulário Socioambiental</h2>
-                        <div class="form-actions">
-                            <button id="btn-save-draft" class="btn btn-secondary">Salvar Rascunho</button>
-                            <button id="btn-finalize" class="btn btn-primary">Finalizar</button>
-                        </div>
+                        <h2>Coleta de Dados</h2>
+                        <p id="active-project-indicator" class="project-indicator"></p>
                     </div>
                     <div id="form-renderer" class="form-content">
                         <!-- Dynamic Form Content -->
                     </div>
+                </div>
+                <!-- Sticky Footer for Actions -->
+                <div class="form-actions-footer">
+                    <button id="btn-save-draft" class="btn btn-secondary">💾 Salvar Rascunho</button>
+                    <button id="btn-finalize" class="btn btn-primary">✅ Finalizar Entrevista</button>
                 </div>
             </div>
 
