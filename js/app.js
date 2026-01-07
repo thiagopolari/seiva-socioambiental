@@ -60,14 +60,26 @@ class App {
 
         // Initialize Settings UI if we are on that view, or pre-load
         // Restore active project name in header if exists
-        if (this.projectManager.activeProject) {
-            const header = document.querySelector('.app-header h1');
-            if (header) header.textContent = `Seiva - ${this.projectManager.activeProject.name}`;
-        }
+        this.updateHeaderProjectBadge();
 
         // 4. Initial Render
         this.updateConnectionStatus();
         this.navigateTo('dashboard');
+    }
+
+    updateHeaderProjectBadge() {
+        const badge = document.getElementById('header-project-badge');
+        if (badge) {
+            if (this.projectManager.activeProject) {
+                badge.innerHTML = `📁 <span>${this.projectManager.activeProject.name}</span>`;
+                badge.style.background = '#dcfce7';
+                badge.style.borderColor = '#86efac';
+            } else {
+                badge.innerHTML = `📁 <span>Nenhum Projeto</span>`;
+                badge.style.background = '#f3f4f6';
+                badge.style.borderColor = '#e5e7eb';
+            }
+        }
     }
 
     setupNavigation() {

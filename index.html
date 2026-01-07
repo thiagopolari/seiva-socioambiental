@@ -27,31 +27,48 @@
 
 <body>
     <div class="app-container">
-        <!-- Header / Navigation -->
+        <!-- Header -->
         <header class="app-header">
             <div class="logo-area">
-                <span class="logo-icon">🌿</span>
-                <h1>Seiva Socioambiental</h1>
+                <div class="logo-icon">🌿</div>
+                <div>
+                    <h1>Seiva Socioambiental</h1>
+                    <small>v2.0 - Coleta Offline-First</small>
+                </div>
             </div>
-            <nav class="main-nav">
-                <button class="nav-btn active" data-view="dashboard" title="Dashboard">
-                    <span class="icon">📊</span>
-                    <span class="label">Painel</span>
+            <div class="header-actions">
+                <div class="project-badge" id="header-project-badge">
+                    📁 <span>Nenhum Projeto</span>
+                </div>
+                <button class="btn btn-secondary" onclick="window.app?.dataManager?.exportAll()">
+                    ⬇️ Backup
                 </button>
-                <button class="nav-btn" data-view="forms" title="Novo Formulário">
-                    <span class="icon">📝</span>
-                    <span class="label">Coleta</span>
-                </button>
-                <button class="nav-btn" data-view="projects" title="Projetos">
-                    <span class="icon">📁</span>
-                    <span class="label">Projetos</span>
-                </button>
-                <button class="nav-btn" data-view="settings" title="Configurações">
-                    <span class="icon">⚙️</span>
-                    <span class="label">Ajustes</span>
-                </button>
-            </nav>
+            </div>
         </header>
+
+        <!-- Navigation Bar -->
+        <nav class="main-nav">
+            <button class="nav-btn active" data-view="dashboard" title="Painel">
+                <span class="icon">📊</span>
+                <span class="label">Painel</span>
+            </button>
+            <button class="nav-btn" data-view="projects" title="Projetos">
+                <span class="icon">📁</span>
+                <span class="label">Projetos</span>
+            </button>
+            <button class="nav-btn" data-view="forms" title="Coleta">
+                <span class="icon">📝</span>
+                <span class="label">Coleta</span>
+            </button>
+            <button class="nav-btn" data-view="map" title="Mapa">
+                <span class="icon">🗺️</span>
+                <span class="label">Mapa</span>
+            </button>
+            <button class="nav-btn" data-view="settings" title="Ajustes">
+                <span class="icon">⚙️</span>
+                <span class="label">Ajustes</span>
+            </button>
+        </nav>
 
         <!-- Main Content Area -->
         <main id="main-content">
