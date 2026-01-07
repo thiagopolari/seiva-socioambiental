@@ -124,6 +124,114 @@ class App {
                 }
             });
         }
+
+        // AI Import and Analyze Button
+        const btnAiImport = document.getElementById('btn-ai-import-analyze');
+        const fileAiInput = document.getElementById('file-ai-analysis');
+        if (btnAiImport && fileAiInput) {
+            btnAiImport.addEventListener('click', () => fileAiInput.click());
+            fileAiInput.addEventListener('change', async (e) => {
+                if (e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    await this.handleAIAnalysis(file);
+                    e.target.value = '';
+                }
+            });
+        }
+
+        // Analyze Existing Data Button
+        const btnAnalyzeExisting = document.getElementById('btn-ai-analyze-existing');
+        if (btnAnalyzeExisting) {
+            btnAnalyzeExisting.addEventListener('click', () => this.analyzeExistingData());
+        }
+    }
+
+    async handleAIAnalysis(file) {
+        const statusDiv = document.getElementById('ai-status-indicator');
+        const statusText = document.getElementById('ai-status-text');
+
+        try {
+            // Show status
+            if (statusDiv) {
+                statusDiv.style.display = 'block';
+                statusText.textContent = '📂 Lendo arquivo...';
+            }
+
+            // Parse file
+            const result = await this.smartParser.parse(file);
+
+            if (statusText) statusText.textContent = '🤖 Enviando para analise...';
+
+            // Generate AI Analysis
+            const analysis = await this.aiService.generateAnalysis(
+                result.content.slice(0, 50000),
+                result.type,
+                'Gere um relatorio tecnico completo com: Resumo Executivo, Indicadores-Chave (em tabela), Analise de Riscos e Oportunidades, e Recomendacoes. Use linguagem formal e tecnica.'
+            );
+
+            // Show result in modal
+            this.modal.show('Analise de IA Concluida', analysis);
+
+            if (statusDiv) {
+                statusText.textContent = '✅ Analise concluida!';
+                setTimeout(() => statusDiv.style.display = 'none', 3000);
+            }
+
+        } catch (error) {
+            console.error('AI Analysis Error:', error);
+            if (statusText) statusText.textContent = '❌ Erro: ' + error.message;
+            this.modal.show('Erro na Analise', `Nao foi possivel analisar o arquivo. Verifique sua chave de API nas Configuracoes.\n\nDetalhes: ${error.message}`);
+        }
+    }
+
+    async analyzeExistingData() {
+        const statusDiv = document.getElementById('ai-status-indicator');
+        const statusText = document.getElementById('ai-status-text');
+
+        try {
+            if (statusDiv) {
+                statusDiv.style.display = 'block';
+                statusText.textContent = '📊 Carregando dados...';
+            }
+
+            // Get all records
+            const records = await db.getAll('socioambiental');
+
+            if (records.length === 0) {
+                this.modal.show('Sem Dados', 'Nao ha dados coletados para analisar. Faca algumas coletas primeiro.');
+                if (statusDiv) statusDiv.style.display = 'none';
+                return;
+            }
+
+            if (statusText) statusText.textContent = `🤖 Analisando ${records.length} registros...`;
+
+            // Prepare data summary for AI
+            const dataSummary = records.map(r => ({
+                projeto: r.data?.project_name,
+                comunidade: r.data?.community_name,
+                data: r.date,
+                temGPS: !!r.data?.location_gps,
+                campos: Object.keys(r.data || {}).length
+            }));
+
+            const analysis = await this.aiService.generateAnalysis(
+                JSON.stringify(dataSummary, null, 2),
+                'JSON',
+                `Analise estes ${records.length} registros de coleta socioambiental. Gere: 1) Resumo Executivo, 2) Tabela de Indicadores (status, tendencias), 3) Analise de Riscos, 4) Oportunidades de SAFs, 5) Recomendacoes Tecnicas.`
+            );
+
+            this.modal.show(`Analise de ${records.length} Registros`, analysis);
+
+            if (statusDiv) {
+                statusText.textContent = '✅ Analise concluida!';
+                setTimeout(() => statusDiv.style.display = 'none', 3000);
+            }
+
+        } catch (error) {
+            console.error('Existing Data Analysis Error:', error);
+            if (statusText) statusText.textContent = '❌ Erro: ' + error.message;
+            this.modal.show('Erro na Analise', `Verifique sua chave de API nas Configuracoes.\n\n${error.message}`);
+        }
     }
 
     async handleSmartImport(file) {
@@ -224,6 +332,65 @@ class App {
         }
         if (viewId === 'projects') {
             this.projectManager.render();
+        }
+        if (viewId === 'map') {
+            this.initializeMapView();
+        }
+    }
+
+    initializeMapView() {
+        const mapContainer = document.getElementById('map-main');
+        if (!mapContainer) return;
+
+        // Initialize map if not already done
+        if (!this.mapInstance) {
+            this.mapInstance = L.map('map-main').setView([-15.78, -47.93], 4);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: 'Seiva Socioambiental'
+            }).addTo(this.mapInstance);
+        }
+
+        // Load markers from records
+        this.loadMapMarkers();
+    }
+
+    async loadMapMarkers() {
+        if (!this.mapInstance) return;
+
+        // Clear existing markers
+        if (this.mapMarkers) {
+            this.mapMarkers.forEach(m => m.remove());
+        }
+        this.mapMarkers = [];
+
+        const records = await db.getAll('socioambiental');
+        const projectFilter = document.getElementById('map-project-filter')?.value || '';
+
+        records.forEach(record => {
+            if (!record.data?.location_gps?.lat) return;
+            if (projectFilter && record.data.project_name !== projectFilter) return;
+
+            const { lat, lng } = record.data.location_gps;
+            const marker = L.marker([lat, lng])
+                .addTo(this.mapInstance)
+                .bindPopup(`
+                    <strong>${record.data.project_name || 'Sem Projeto'}</strong><br>
+                    Comunidade: ${record.data.community_name || 'N/A'}<br>
+                    Data: ${new Date(record.date).toLocaleDateString('pt-BR')}
+                `);
+            this.mapMarkers.push(marker);
+        });
+
+        // Populate project filter
+        const filterSelect = document.getElementById('map-project-filter');
+        if (filterSelect && filterSelect.options.length === 1) {
+            const projects = await db.getAll('projects');
+            projects.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.name;
+                option.textContent = p.name;
+                filterSelect.appendChild(option);
+            });
         }
     }
 
