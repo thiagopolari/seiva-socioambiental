@@ -296,4 +296,121 @@ export class PDFGenerator {
 
         this.doc.save(`Relatorio_Seiva_${safeName}_${shortId}.pdf`);
     }
+
+    async generateAIReport(content, title = 'Analise Inteligente de Dados') {
+        const { jsPDF } = window.jspdf;
+        this.doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+
+        let yPos = 20;
+        const margin = 15;
+        const pageWidth = this.doc.internal.pageSize.getWidth();
+        const pageHeight = this.doc.internal.pageSize.getHeight();
+        const contentWidth = pageWidth - (margin * 2);
+
+        // Colors
+        const colors = {
+            primary: [139, 92, 246],     // AI Purple (8b5cf6)
+            secondary: [245, 243, 255],  // Light Purple
+            text: [31, 41, 55],
+            textMuted: [107, 114, 128],
+            white: [255, 255, 255]
+        };
+
+        const checkPageBreak = (space = 10) => {
+            if (yPos + space > pageHeight - 20) {
+                this.doc.addPage();
+                yPos = 20;
+                return true;
+            }
+            return false;
+        };
+
+        // Header
+        this.doc.setFillColor(...colors.primary);
+        this.doc.rect(0, 0, pageWidth, 6, 'F');
+
+        this.doc.setFont('helvetica', 'bold');
+        this.doc.setFontSize(18);
+        this.doc.setTextColor(...colors.primary);
+        this.doc.text('🤖 ' + title, margin, yPos);
+        yPos += 10;
+
+        this.doc.setFontSize(10);
+        this.doc.setTextColor(...colors.textMuted);
+        this.doc.text('Relatorio gerado automaticamente pelo Sistema Seiva AI', margin, yPos);
+        yPos += 15;
+
+        // Process Content (Simple Markdown Parser)
+        const lines = content.split('\n');
+
+        this.doc.setFont('helvetica', 'normal');
+        this.doc.setFontSize(10);
+        this.doc.setTextColor(...colors.text);
+
+        lines.forEach(line => {
+            line = this.sanitizeText(line);
+
+            // H1 (#)
+            if (line.startsWith('# ')) {
+                checkPageBreak(15);
+                yPos += 5;
+                this.doc.setFont('helvetica', 'bold');
+                this.doc.setFontSize(14);
+                this.doc.setTextColor(...colors.primary);
+                this.doc.text(line.replace('# ', '').toUpperCase(), margin, yPos);
+                yPos += 8;
+                this.doc.line(margin, yPos - 2, pageWidth - margin, yPos - 2); // Underline
+                this.doc.setFont('helvetica', 'normal');
+                this.doc.setTextColor(...colors.text);
+                this.doc.setFontSize(10);
+            }
+            // H2 (##)
+            else if (line.startsWith('## ')) {
+                checkPageBreak(12);
+                yPos += 4;
+                this.doc.setFont('helvetica', 'bold');
+                this.doc.setFontSize(12);
+                this.doc.setTextColor(...colors.text);
+                this.doc.text(line.replace('## ', ''), margin, yPos);
+                yPos += 6;
+                this.doc.setFont('helvetica', 'normal');
+                this.doc.setFontSize(10);
+            }
+            // H3 (###)
+            else if (line.startsWith('### ')) {
+                checkPageBreak(10);
+                yPos += 2;
+                this.doc.setFont('helvetica', 'bold');
+                this.doc.setFontSize(10);
+                this.doc.text(line.replace('### ', ''), margin, yPos);
+                yPos += 5;
+                this.doc.setFont('helvetica', 'normal');
+            }
+            // Lists (- or *)
+            else if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+                checkPageBreak(6);
+                const text = line.replace(/^[\-\*] /, '').trim();
+                this.doc.circle(margin + 2, yPos - 1, 1, 'F');
+
+                const splitText = this.doc.splitTextToSize(text, contentWidth - 10);
+                this.doc.text(splitText, margin + 6, yPos);
+                yPos += (splitText.length * 5) + 2;
+            }
+            // Bold (**text**) - Naive implementation (just strips stars and bolds whole line if it looks like a header)
+            else if (line.trim().length > 0) {
+                checkPageBreak(6);
+                const splitText = this.doc.splitTextToSize(line.replace(/\*\*/g, ''), contentWidth);
+                this.doc.text(splitText, margin, yPos);
+                yPos += (splitText.length * 5) + 2;
+            }
+        });
+
+        // Save
+        const dateStr = new Date().toISOString().slice(0, 10);
+        this.doc.save(`Analise_IA_${dateStr}.pdf`);
+    }
 }

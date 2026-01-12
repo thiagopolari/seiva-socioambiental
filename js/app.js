@@ -5,11 +5,13 @@ import { SocioambientalFormSchema } from './forms/socioambiental-form.js';
 import { Dashboard } from './dashboard/dashboard.js';
 import { DataManager } from './export/data-manager.js';
 import { ExcelGenerator } from './export/excel-generator.js';
+import { PDFGenerator } from './export/pdf-generator.js'; // NEW
 import { SettingsManager } from './settings/settings-manager.js';
 import { AIService } from './ai/ai-service.js';
 import { SmartParser } from './ai/smart-parser.js';
 import { Modal } from './components/modal.js';
 import { ProjectManager } from './projects/project-manager.js';
+import { MapManager } from './map/map-manager.js';
 
 class App {
     constructor() {
@@ -21,11 +23,13 @@ class App {
         this.dashboard = new Dashboard();
         this.dataManager = new DataManager();
         this.excelGenerator = new ExcelGenerator();
+        this.pdfGenerator = new PDFGenerator(); // NEW
         this.settingsManager = new SettingsManager();
         this.aiService = new AIService();
         this.smartParser = new SmartParser();
         this.modal = new Modal();
-        this.projectManager = new ProjectManager(); // New Module
+        this.projectManager = new ProjectManager();
+        this.mapManager = new MapManager('map-main');
 
         this.init();
     }
@@ -170,7 +174,14 @@ class App {
             );
 
             // Show result in modal
-            this.modal.show('Analise de IA Concluida', analysis);
+            this.modal.show('Analise de IA Concluida', analysis, [
+                {
+                    label: '📄 Baixar Relatorio PDF',
+                    class: 'btn btn-primary',
+                    onClick: () => this.pdfGenerator.generateAIReport(analysis, 'Analise de Arquivo Importado')
+                },
+                { label: 'Fechar', class: 'btn btn-secondary', close: true }
+            ]);
 
             if (statusDiv) {
                 statusText.textContent = '✅ Analise concluida!';
@@ -220,7 +231,14 @@ class App {
                 `Analise estes ${records.length} registros de coleta socioambiental. Gere: 1) Resumo Executivo, 2) Tabela de Indicadores (status, tendencias), 3) Analise de Riscos, 4) Oportunidades de SAFs, 5) Recomendacoes Tecnicas.`
             );
 
-            this.modal.show(`Analise de ${records.length} Registros`, analysis);
+            this.modal.show(`Analise de ${records.length} Registros`, analysis, [
+                {
+                    label: '📄 Baixar Relatorio PDF',
+                    class: 'btn btn-primary',
+                    onClick: () => this.pdfGenerator.generateAIReport(analysis, 'Analise de Dados Coletados')
+                },
+                { label: 'Fechar', class: 'btn btn-secondary', close: true }
+            ]);
 
             if (statusDiv) {
                 statusText.textContent = '✅ Analise concluida!';
@@ -266,7 +284,14 @@ class App {
             );
 
             // 4. Show Result
-            this.modal.show(`Análise IA: ${result.type}`, analysis);
+            this.modal.show(`Análise IA: ${result.type}`, analysis, [
+                {
+                    label: '📄 Baixar Relatorio PDF',
+                    class: 'btn btn-primary',
+                    onClick: () => this.pdfGenerator.generateAIReport(analysis, `Analise de Importacao ${result.type}`)
+                },
+                { label: 'Fechar', class: 'btn btn-secondary', close: true }
+            ]);
 
         } catch (error) {
             console.error(error);
@@ -339,47 +364,15 @@ class App {
     }
 
     initializeMapView() {
-        const mapContainer = document.getElementById('map-main');
-        if (!mapContainer) return;
-
-        // Initialize map if not already done
-        if (!this.mapInstance) {
-            this.mapInstance = L.map('map-main').setView([-15.78, -47.93], 4);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: 'Seiva Socioambiental'
-            }).addTo(this.mapInstance);
-        }
-
-        // Load markers from records
+        this.mapManager.initialize();
         this.loadMapMarkers();
     }
 
     async loadMapMarkers() {
-        if (!this.mapInstance) return;
-
-        // Clear existing markers
-        if (this.mapMarkers) {
-            this.mapMarkers.forEach(m => m.remove());
-        }
-        this.mapMarkers = [];
-
         const records = await db.getAll('socioambiental');
         const projectFilter = document.getElementById('map-project-filter')?.value || '';
 
-        records.forEach(record => {
-            if (!record.data?.location_gps?.lat) return;
-            if (projectFilter && record.data.project_name !== projectFilter) return;
-
-            const { lat, lng } = record.data.location_gps;
-            const marker = L.marker([lat, lng])
-                .addTo(this.mapInstance)
-                .bindPopup(`
-                    <strong>${record.data.project_name || 'Sem Projeto'}</strong><br>
-                    Comunidade: ${record.data.community_name || 'N/A'}<br>
-                    Data: ${new Date(record.date).toLocaleDateString('pt-BR')}
-                `);
-            this.mapMarkers.push(marker);
-        });
+        this.mapManager.loadMarkers(records, projectFilter);
 
         // Populate project filter
         const filterSelect = document.getElementById('map-project-filter');
@@ -391,8 +384,15 @@ class App {
                 option.textContent = p.name;
                 filterSelect.appendChild(option);
             });
+
+            // Add change listener
+            filterSelect.onchange = () => {
+                this.loadMapMarkers();
+            };
         }
     }
+
+
 
     async saveForm(isFinal) {
         if (!this.formEngine) return;

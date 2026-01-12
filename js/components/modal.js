@@ -3,7 +3,7 @@ export class Modal {
         this.overlay = null;
     }
 
-    show(title, content) {
+    show(title, content, actions = []) {
         this.close(); // Close existing
 
         const overlay = document.createElement('div');
@@ -33,7 +33,7 @@ export class Modal {
 
         const body = document.createElement('div');
         body.style.cssText = `
-            padding: 20px; overflow-y: auto; line-height: 1.6;
+            padding: 20px; overflow-y: auto; line-height: 1.6; flex: 1;
         `;
         // Simple markdown formatted to HTML (very basic)
         const formatted = content
@@ -46,6 +46,38 @@ export class Modal {
 
         modal.appendChild(header);
         modal.appendChild(body);
+
+        // Footer with Actions
+        if (actions && actions.length > 0) {
+            const footer = document.createElement('div');
+            footer.style.cssText = `
+                padding: 15px 20px; border-top: 1px solid var(--border, #eee);
+                display: flex; justify-content: flex-end; gap: 10px; background: var(--background, #f9fafb);
+                border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
+            `;
+
+            actions.forEach(action => {
+                const btn = document.createElement('button');
+                btn.className = action.class || 'btn btn-secondary'; // Default styling
+                btn.textContent = action.label;
+                btn.onclick = () => {
+                    if (action.onClick) action.onClick();
+                    if (action.close) this.close();
+                };
+
+                // Inline styles if class not available
+                if (!action.class) {
+                    btn.style.cssText = `
+                        padding: 8px 16px; border-radius: 6px; border: 1px solid #ddd;
+                        background: #fff; cursor: pointer; font-size: 0.9rem;
+                    `;
+                }
+
+                footer.appendChild(btn);
+            });
+            modal.appendChild(footer);
+        }
+
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
 
