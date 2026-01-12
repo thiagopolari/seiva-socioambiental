@@ -33,6 +33,14 @@ export class MapManager {
         this.setupEvents();
     }
 
+    refresh() {
+        if (this.map) {
+            setTimeout(() => {
+                this.map.invalidateSize();
+            }, 100);
+        }
+    }
+
     setupDrawControls() {
         if (!L.Control.Draw) {
             console.warn('Leaflet.Draw not loaded');
@@ -68,7 +76,7 @@ export class MapManager {
         this.map.on(L.Draw.Event.CREATED, (e) => {
             const layer = e.layer;
             this.drawnItems.addLayer(layer);
-            
+
             // Calculate Area (approximate)
             if (e.layerType === 'polygon' || e.layerType === 'rectangle') {
                 const area = L.GeometryUtil.geodesicArea(layer.getLatLngs()[0]);
@@ -123,7 +131,7 @@ export class MapManager {
             if (projectFilter && record.data.project_name !== projectFilter) return;
 
             const { lat, lng } = record.data.location_gps;
-            
+
             // Create nice custom marker or default
             const marker = L.marker([lat, lng])
                 .bindPopup(`
@@ -135,7 +143,7 @@ export class MapManager {
                         Status: ${record.status || 'N/A'}
                     </div>
                 `);
-            
+
             this.markersLayer.addLayer(marker);
             bounds.extend([lat, lng]);
         });

@@ -22,16 +22,8 @@ export class SignatureWidget {
 
         const canvas = this.container.querySelector('canvas');
 
-        // Set canvas dimensions explicitly before initializing SignaturePad
-        // This is critical - canvas needs actual pixel dimensions, not CSS
-        const rect = canvas.getBoundingClientRect();
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-
-        canvas.width = rect.width * ratio;
-        canvas.height = rect.height * ratio;
-
-        const ctx = canvas.getContext('2d');
-        ctx.scale(ratio, ratio);
+        // Initial sizing logic
+        this.resizeCanvas(canvas);
 
         // Initialize Signature Pad Library
         if (typeof SignaturePad === 'undefined') {
@@ -44,6 +36,12 @@ export class SignatureWidget {
             penColor: 'rgb(0, 0, 0)'
         });
 
+        // Handle Resizing dynamically
+        const resizeObserver = new ResizeObserver(() => {
+            this.resizeCanvas(canvas);
+        });
+        resizeObserver.observe(this.container);
+
         // Clear Button
         this.container.querySelector('.btn-clear-sig').addEventListener('click', () => {
             this.pad.clear();
@@ -54,6 +52,38 @@ export class SignatureWidget {
         this.pad.addEventListener("endStroke", () => {
             if (this.options.onChange) this.options.onChange(this.getValue());
         });
+    }
+
+    resizeCanvas(canvas) {
+        // When resized, stretch the canvas to fill the container
+        // but try to keep the content (this is tricky with SignaturePad, simpler to just resize)
+
+        // Check availability
+        if (canvas.offsetWidth === 0) return; // Still hidden
+
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+
+        // Only resize if actually changed to avoid clearing data unnecessarily on minor shifts
+        const newWidth = canvas.offsetWidth * ratio;
+        const newHeight = canvas.offsetHeight * ratio;
+
+        if (canvas.width !== newWidth || canvas.height !== newHeight) {
+
+            // Store data if we want to preserve it (optional, but good UX)
+            let data = null;
+            if (this.pad) {
+                data = this.pad.toData();
+            }
+
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            canvas.getContext('2d').scale(ratio, ratio);
+
+            if (this.pad) {
+                this.pad.clear(); // Clears logic buffer
+                if (data) this.pad.fromData(data); // Restore signature
+            }
+        }
     }
 
     getValue() {

@@ -198,6 +198,7 @@ class App {
     async analyzeExistingData() {
         const statusDiv = document.getElementById('ai-status-indicator');
         const statusText = document.getElementById('ai-status-text');
+        const projectFilter = document.getElementById('ai-project-selector')?.value;
 
         try {
             if (statusDiv) {
@@ -206,10 +207,18 @@ class App {
             }
 
             // Get all records
-            const records = await db.getAll('socioambiental');
+            let records = await db.getAll('socioambiental');
+
+            // Apply Project Filter
+            if (projectFilter) {
+                records = records.filter(r => r.data && r.data.project_name === projectFilter);
+            }
 
             if (records.length === 0) {
-                this.modal.show('Sem Dados', 'Nao ha dados coletados para analisar. Faca algumas coletas primeiro.');
+                const msg = projectFilter
+                    ? `Nao ha dados coletados para o projeto "${projectFilter}".`
+                    : 'Nao ha dados coletados para analisar.';
+                this.modal.show('Sem Dados', msg);
                 if (statusDiv) statusDiv.style.display = 'none';
                 return;
             }
@@ -228,14 +237,14 @@ class App {
             const analysis = await this.aiService.generateAnalysis(
                 JSON.stringify(dataSummary, null, 2),
                 'JSON',
-                `Analise estes ${records.length} registros de coleta socioambiental. Gere: 1) Resumo Executivo, 2) Tabela de Indicadores (status, tendencias), 3) Analise de Riscos, 4) Oportunidades de SAFs, 5) Recomendacoes Tecnicas.`
+                `Analise estes ${records.length} registros de coleta socioambiental${projectFilter ? ` do projeto ${projectFilter}` : ''}. Gere: 1) Resumo Executivo, 2) Tabela de Indicadores (status, tendencias), 3) Analise de Riscos, 4) Oportunidades de SAFs, 5) Recomendacoes Tecnicas.`
             );
 
             this.modal.show(`Analise de ${records.length} Registros`, analysis, [
                 {
                     label: '📄 Baixar Relatorio PDF',
                     class: 'btn btn-primary',
-                    onClick: () => this.pdfGenerator.generateAIReport(analysis, 'Analise de Dados Coletados')
+                    onClick: () => this.pdfGenerator.generateAIReport(analysis, `Analise ${projectFilter || 'Geral'}`)
                 },
                 { label: 'Fechar', class: 'btn btn-secondary', close: true }
             ]);
@@ -250,6 +259,38 @@ class App {
             if (statusText) statusText.textContent = '❌ Erro: ' + error.message;
             this.modal.show('Erro na Analise', `Verifique sua chave de API nas Configuracoes.\n\n${error.message}`);
         }
+    }
+
+    async populateAllProjectDropdowns() {
+        const projects = await db.getAll('projects');
+        const selectors = [
+            'ai-project-selector',
+            'report-project-selector',
+            'map-project-filter'
+        ];
+
+        selectors.forEach(id => {
+            const select = document.getElementById(id);
+            if (select) {
+                const currentVal = select.value;
+                // Keep default option (index 0)
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+
+                projects.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.name;
+                    option.textContent = p.name;
+                    select.appendChild(option);
+                });
+
+                // Restore value if still valid
+                if (currentVal && Array.from(select.options).some(o => o.value === currentVal)) {
+                    select.value = currentVal;
+                }
+            }
+        });
     }
 
     async handleSmartImport(file) {
@@ -357,15 +398,27 @@ class App {
         }
         if (viewId === 'projects') {
             this.projectManager.render();
+            this.populateAllProjectDropdowns();
         }
         if (viewId === 'map') {
+            this.populateAllProjectDropdowns();
             this.initializeMapView();
+        }
+        if (viewId === 'reports') {
+            this.populateAllProjectDropdowns();
         }
     }
 
     initializeMapView() {
         this.mapManager.initialize();
+        this.mapManager.refresh(); // Fix for partial map
         this.loadMapMarkers();
+
+        // Bind change listener for map filter specifically
+        const filterSelect = document.getElementById('map-project-filter');
+        if (filterSelect) {
+            filterSelect.onchange = () => this.loadMapMarkers();
+        }
     }
 
     async loadMapMarkers() {
@@ -373,23 +426,6 @@ class App {
         const projectFilter = document.getElementById('map-project-filter')?.value || '';
 
         this.mapManager.loadMarkers(records, projectFilter);
-
-        // Populate project filter
-        const filterSelect = document.getElementById('map-project-filter');
-        if (filterSelect && filterSelect.options.length === 1) {
-            const projects = await db.getAll('projects');
-            projects.forEach(p => {
-                const option = document.createElement('option');
-                option.value = p.name;
-                option.textContent = p.name;
-                filterSelect.appendChild(option);
-            });
-
-            // Add change listener
-            filterSelect.onchange = () => {
-                this.loadMapMarkers();
-            };
-        }
     }
 
 
